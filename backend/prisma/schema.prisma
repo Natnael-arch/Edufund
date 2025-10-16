@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  completedQuests CompletedQuest[]
+}
+
+model Quest {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  reward      Int      // mUSD reward amount
+  difficulty  String   // "beginner", "intermediate", "advanced"
+  content     String   // Quest content/learning material
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  completedBy  CompletedQuest[]
+  fundingPools FundingPool[]
+}
+
+model CompletedQuest {
+  id        String   @id @default(uuid())
+  userId    String
+  questId   String
+  completedAt DateTime @default(now())
+  rewardClaimed Boolean @default(false)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, questId])
+}
+
+model Reward {
+  id        String   @id @default(uuid())
+  wallet    String
+  questId   String
+  amount    Int      // mUSD amount in smallest unit
+  txHash    String?
+  poolId    String?  // Link to funding pool (if funded by company)
+  claimedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  
+  pool FundingPool? @relation(fields: [poolId], references: [id], onDelete: SetNull)
+  
+  @@index([wallet])
+  @@index([poolId])
+}
+
+model Company {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  walletAddress String   @unique
+  password      String   // Hashed password
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  fundingPools FundingPool[]
+}
+
+model FundingPool {
+  id               String   @id @default(uuid())
+  companyId        String
+  questId          String?  // Linked quest that students complete
+  courseName       String
+  totalFund        Int      // Total mUSD locked
+  rewardPerStudent Int      // mUSD per student
+  maxParticipants  Int      // Maximum number of students
+  remainingBalance Int      // Current balance
+  contractAddress  String?  // Smart contract pool address
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quest   Quest?  @relation(fields: [questId], references: [id], onDelete: SetNull)
+  rewards Reward[]
+  
+  @@index([companyId])
+  @@index([active])
+  @@index([questId])
+}
+
+
