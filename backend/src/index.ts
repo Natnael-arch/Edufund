@@ -214,25 +214,42 @@ app.post('/api/quests/:id/complete', async (req, res) => {
     // Generate signature for smart contract claim
     let signature = null;
     let questIdBytes = null;
+    let poolIdBytes = null;
+    let useCompanyPool = false;
     
     if (signerWallet) {
       try {
-        // Convert quest ID to bytes32
         questIdBytes = ethers.keccak256(ethers.toUtf8Bytes(id));
         
-        // Convert reward amount to wei (18 decimals)
-        const amountWei = ethers.parseEther(quest.reward.toString());
-        
-        // Create message hash: keccak256(questId, userAddress, amount)
-        const messageHash = ethers.solidityPackedKeccak256(
-          ['bytes32', 'address', 'uint256'],
-          [questIdBytes, walletAddress, amountWei]
-        );
-        
-        // Sign the message
-        signature = await signerWallet.signMessage(ethers.getBytes(messageHash));
-        
-        console.log('✅ Generated signature for quest:', id, 'user:', walletAddress);
+        // Check if this quest is funded by a company pool
+        if (fundingPool) {
+          // Generate signature for Company Pool contract
+          // Message: keccak256(poolId, studentAddress, questId)
+          poolIdBytes = ethers.keccak256(ethers.toUtf8Bytes(fundingPool.id));
+          
+          const messageHash = ethers.solidityPackedKeccak256(
+            ['bytes32', 'address', 'bytes32'],
+            [poolIdBytes, walletAddress, questIdBytes]
+          );
+          
+          signature = await signerWallet.signMessage(ethers.getBytes(messageHash));
+          useCompanyPool = true;
+          
+          console.log('✅ Generated Company Pool signature for pool:', fundingPool.id, 'user:', walletAddress);
+        } else {
+          // Generate signature for Student Rewards contract
+          // Message: keccak256(questId, userAddress, amount)
+          const amountWei = ethers.parseEther(quest.reward.toString());
+          
+          const messageHash = ethers.solidityPackedKeccak256(
+            ['bytes32', 'address', 'uint256'],
+            [questIdBytes, walletAddress, amountWei]
+          );
+          
+          signature = await signerWallet.signMessage(ethers.getBytes(messageHash));
+          
+          console.log('✅ Generated Student Rewards signature for quest:', id, 'user:', walletAddress);
+        }
       } catch (signError) {
         console.error('❌ Failed to generate signature:', signError);
       }
@@ -242,9 +259,17 @@ app.post('/api/quests/:id/complete', async (req, res) => {
       message: 'Quest completed successfully',
       completedQuest,
       reward: quest.reward,
-      // Include signature and questIdBytes for claiming
+      // Include signature and bytes for claiming
       signature,
-      questIdBytes
+      questIdBytes,
+      poolIdBytes,
+      poolId: fundingPool?.id,
+      useCompanyPool,
+      fundingPool: fundingPool ? {
+        id: fundingPool.id,
+        companyName: fundingPool.courseName,
+        rewardPerStudent: fundingPool.rewardPerStudent
+      } : null
     });
   } catch (error) {
     console.error(error);

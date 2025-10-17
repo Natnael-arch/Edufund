@@ -4,6 +4,7 @@ import { useAccount, useSwitchChain } from 'wagmi';
 import { questApi, rewardApi, Quest } from '../services/api';
 import { mezoTestnet } from '../wagmi.config';
 import { claimRewardFromContract } from '../services/contracts';
+import { distributeFromPool } from '../services/poolContracts';
 import toast from 'react-hot-toast';
 
 function QuestDetails() {
@@ -19,6 +20,7 @@ function QuestDetails() {
   const [completed, setCompleted] = useState(false);
   const [showClaimButton, setShowClaimButton] = useState(false);
   const [claimSignature, setClaimSignature] = useState<string | null>(null);
+  const [claimData, setClaimData] = useState<any>(null);
   
   const isOnMezo = chain?.id === mezoTestnet.id;
 
@@ -57,17 +59,26 @@ function QuestDetails() {
       setError(null);
       const response = await questApi.completeQuest(id, address);
       
-      // Store signature from backend for claiming
+      // Store all claim data from backend
       if (response.signature) {
         setClaimSignature(response.signature);
-        console.log('✅ Received signature from backend');
+        setClaimData(response);
+        console.log('✅ Received claim data:', {
+          useCompanyPool: response.useCompanyPool,
+          hasPool: !!response.poolId
+        });
       } else {
         console.warn('⚠️ No signature received from backend');
       }
       
       setCompleted(true);
       setShowClaimButton(true);
-      toast.success('Quest completed! Now claim your reward.');
+      
+      if (response.fundingPool) {
+        toast.success(`Quest completed! Claim your reward from ${response.fundingPool.companyName}!`);
+      } else {
+        toast.success('Quest completed! Now claim your reward.');
+      }
     } catch (err: any) {
       const errorMsg = err.response?.data?.error || 'Failed to complete quest';
       toast.error(errorMsg);
@@ -103,22 +114,44 @@ function QuestDetails() {
       setError(null);
 
       // Check if we have signature from backend
-      if (!claimSignature) {
+      if (!claimSignature || !claimData) {
         toast.error('No signature available. Please complete the quest first.');
         return;
       }
       
-      toast.loading('Sending transaction to Mezo smart contract...', { duration: 3000 });
+      let txHash: string;
       
-      // Call smart contract to transfer mUSD with REAL signature
-      const txHash = await claimRewardFromContract(id, quest.reward, claimSignature);
-      
-      toast.success('Transaction confirmed on Mezo!', { duration: 2000 });
+      // Use appropriate contract based on funding source
+      if (claimData.useCompanyPool && claimData.poolIdBytes) {
+        // Company-funded quest: Use Company Pool contract
+        toast.loading('Claiming from company pool on blockchain...', { duration: 3000 });
+        
+        txHash = await distributeFromPool(
+          claimData.poolId,
+          claimData.poolIdBytes,
+          address,
+          claimData.questIdBytes,
+          claimSignature
+        );
+        
+        toast.success('Company pool distribution confirmed!', { duration: 2000 });
+      } else {
+        // Platform quest: Use Student Rewards contract
+        toast.loading('Claiming from platform rewards...', { duration: 3000 });
+        
+        txHash = await claimRewardFromContract(id, quest.reward, claimSignature);
+        
+        toast.success('Platform reward confirmed!', { duration: 2000 });
+      }
       
       // Record the claim in backend with real tx hash
       await rewardApi.claimReward(address, id, txHash);
       
-      toast.success(`Successfully claimed ${quest.reward} mUSD! Check your wallet! 💰`, {
+      const fundedBy = claimData.fundingPool 
+        ? ` from ${claimData.fundingPool.companyName}` 
+        : '';
+      
+      toast.success(`Successfully claimed ${quest.reward} mUSD${fundedBy}! Check your wallet! 💰`, {
         duration: 5000,
       });
       

@@ -112,6 +112,52 @@ export async function getPoolFromChain(poolId: string) {
 }
 
 /**
+ * Distribute reward from company pool (on-chain)
+ */
+export async function distributeFromPool(
+  poolId: string,
+  poolIdBytes: string,
+  student: string,
+  questIdBytes: string,
+  signature: string
+): Promise<string> {
+  if (typeof window.ethereum === 'undefined') {
+    throw new Error('No wallet found');
+  }
+
+  try {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const poolContract = new ethers.Contract(
+      POOL_CONTRACTS.COMPANY_POOL,
+      COMPANY_POOL_ABI,
+      signer
+    );
+
+    console.log('🔄 Calling Company Pool contract...');
+    console.log('Pool ID:', poolIdBytes);
+    console.log('Student:', student);
+    console.log('Quest ID:', questIdBytes);
+
+    const tx = await poolContract.distributeReward(
+      poolIdBytes,
+      student,
+      questIdBytes,
+      signature
+    );
+
+    console.log('⏳ Waiting for confirmation...');
+    const receipt = await tx.wait();
+    console.log('✅ Distribution confirmed!');
+
+    return receipt.hash;
+  } catch (error: any) {
+    console.error('Failed to distribute from pool:', error);
+    throw new Error(error.message || 'Pool distribution failed');
+  }
+}
+
+/**
  * Check mUSD balance
  */
 export async function getMUSDBalance(address: string): Promise<string> {
