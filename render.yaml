@@ -4,8 +4,8 @@ services:
     env: node
     rootDir: backend
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm start
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
@@ -25,5 +25,4 @@ services:
       - key: MEZO_RPC
         value: https://rpc.test.mezo.org
     
-    postDeployCommand: npx prisma generate && npx prisma db push
 
