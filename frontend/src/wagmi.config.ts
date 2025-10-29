@@ -33,7 +33,7 @@ export const mezoTestnet = defineChain({
 
 export const config = getDefaultConfig({
   appName: 'EduFund',
-  projectId: 'YOUR_PROJECT_ID', // Get from https://cloud.walletconnect.com/
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
   chains: [mainnet, sepolia, mezoTestnet], // Added Mezo!
   ssr: false,
 });

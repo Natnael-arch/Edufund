@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: edufund-backend
+    env: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      # Fill these in Render Dashboard or here if you prefer committing (not recommended)
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SIGNER_PRIVATE_KEY
+        sync: false
+      - key: COMPANY_POOL_CONTRACT
+        sync: false
+      - key: MEZO_RPC
+        value: https://rpc.test.mezo.org
+    
+    postDeployCommand: npx prisma generate && npx prisma db push
+

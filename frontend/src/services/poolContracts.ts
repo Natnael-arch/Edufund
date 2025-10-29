@@ -2,8 +2,8 @@ import { ethers } from 'ethers';
 
 // Company Pool Contract Configuration
 export const POOL_CONTRACTS = {
-  COMPANY_POOL: '0xC84c34835BEB8A4fb180979E1A4b567A6fC9F9dE',
-  MUSD: '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503',
+  COMPANY_POOL: import.meta.env.VITE_COMPANY_POOL_CONTRACT || '0xC84c34835BEB8A4fb180979E1A4b567A6fC9F9dE',
+  MUSD: import.meta.env.VITE_MUSD_CONTRACT || '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503',
 };
 
 // Company Pool Contract ABI

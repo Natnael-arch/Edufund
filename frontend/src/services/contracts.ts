@@ -2,8 +2,8 @@ import { ethers } from 'ethers';
 
 // Contract Addresses on Mezo Testnet
 export const CONTRACTS = {
-  MUSD: '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503',
-  REWARDS: '0x105982Df4Bf219244116A2e814B68A62f4802421', // Deployed!
+  MUSD: import.meta.env.VITE_MUSD_CONTRACT || '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503',
+  REWARDS: import.meta.env.VITE_REWARDS_CONTRACT || '0x105982Df4Bf219244116A2e814B68A62f4802421',
 };
 
 // mUSD Token ABI (ERC20)
