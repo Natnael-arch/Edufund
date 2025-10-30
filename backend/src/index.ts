@@ -584,6 +584,10 @@ app.post('/api/pools/create', authenticateCompany, async (req, res) => {
     const { courseName, totalFund, rewardPerStudent, maxParticipants, description, content } = req.body;
     const companyId = req.companyId;
 
+    if (!companyId) {
+      return res.status(401).json({ error: 'Company ID is required' });
+    }
+
     if (!courseName || !totalFund || !rewardPerStudent || !maxParticipants) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -658,6 +662,10 @@ app.get('/api/pools/list', authenticateCompany, async (req, res) => {
   try {
     const companyId = req.companyId;
 
+    if (!companyId) {
+      return res.status(401).json({ error: 'Company ID is required' });
+    }
+
     const pools = await prisma.fundingPool.findMany({
       where: { companyId },
       include: {
@@ -680,6 +688,10 @@ app.get('/api/pools/:id', authenticateCompany, async (req, res) => {
   try {
     const { id } = req.params;
     const companyId = req.companyId;
+
+    if (!companyId) {
+      return res.status(401).json({ error: 'Company ID is required' });
+    }
 
     const pool = await prisma.fundingPool.findFirst({
       where: {
@@ -717,6 +729,10 @@ app.delete('/api/pools/:id', authenticateCompany, async (req, res) => {
   try {
     const { id } = req.params;
     const companyId = req.companyId;
+
+    if (!companyId) {
+      return res.status(401).json({ error: 'Company ID is required' });
+    }
 
     const pool = await prisma.fundingPool.findFirst({
       where: {
