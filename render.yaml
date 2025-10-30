@@ -5,7 +5,7 @@ services:
     rootDir: backend
     plan: free
     buildCommand: npm install && npx prisma generate
-    startCommand: npx prisma db push --accept-data-loss && npm run dev
+    startCommand: npx prisma db push --accept-data-loss && npx tsx src/index.ts
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
