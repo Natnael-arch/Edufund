@@ -8,6 +8,15 @@ import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
+// Extend Express Request type to include companyId
+declare global {
+  namespace Express {
+    interface Request {
+      companyId?: string;
+    }
+  }
+}
+
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
