@@ -105,14 +105,14 @@ contract EduFundCompanyPool is Ownable, ReentrancyGuard {
     
     /**
      * @dev Distribute reward to student from a specific pool
-     * Can only be called by contract owner (backend)
+     * Anyone can call this with a valid backend signature
      */
     function distributeReward(
         bytes32 poolId,
         address student,
         bytes32 questId,
         bytes memory signature
-    ) external onlyOwner nonReentrant {
+    ) external nonReentrant {
         Pool storage pool = pools[poolId];
         
         require(pool.active, "Pool is not active");

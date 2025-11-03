@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 // Company Pool Contract Address
-const COMPANY_POOL_CONTRACT = process.env.COMPANY_POOL_CONTRACT || '0xC84c34835BEB8A4fb180979E1A4b567A6fC9F9dE';
+const COMPANY_POOL_CONTRACT = process.env.COMPANY_POOL_CONTRACT || '0x3C11dB42235a47C68537aF66cBad84cFD8e5D6a3';
 
 // Initialize signer for smart contract signatures
 // This should be the SAME wallet that deployed the contract (contract owner)
@@ -235,6 +235,14 @@ app.post('/api/quests/:id/complete', async (req, res) => {
           // Generate signature for Company Pool contract
           // Message: keccak256(poolId, studentAddress, questId)
           poolIdBytes = ethers.keccak256(ethers.toUtf8Bytes(fundingPool.id));
+          
+          console.log('🔐 Signing for:', {
+            poolId: fundingPool.id,
+            poolIdBytes,
+            student: walletAddress,
+            questId: id,
+            questIdBytes
+          });
           
           const messageHash = ethers.solidityPackedKeccak256(
             ['bytes32', 'address', 'bytes32'],
@@ -782,6 +790,62 @@ app.delete('/api/pools/:id', authenticateCompany, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 
 // Company Pool Contract Configuration
 export const POOL_CONTRACTS = {
-  COMPANY_POOL: import.meta.env.VITE_COMPANY_POOL_CONTRACT || '0xC84c34835BEB8A4fb180979E1A4b567A6fC9F9dE',
+  COMPANY_POOL: import.meta.env.VITE_COMPANY_POOL_CONTRACT || '0x3C11dB42235a47C68537aF66cBad84cFD8e5D6a3',
   MUSD: import.meta.env.VITE_MUSD_CONTRACT || '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503',
 };
 
@@ -47,19 +47,38 @@ export async function createPoolOnChain(
     const totalFundWei = ethers.parseEther(totalFund.toString());
     const rewardWei = ethers.parseEther(rewardPerStudent.toString());
 
-    // Step 1: Approve mUSD spending
-    const musdContract = new ethers.Contract(POOL_CONTRACTS.MUSD, MUSD_ABI, signer);
-    
-    const approveTx = await musdContract.approve(POOL_CONTRACTS.COMPANY_POOL, totalFundWei);
-    await approveTx.wait();
+    console.log('🎯 Creating pool on-chain:', {
+      poolId,
+      poolIdBytes,
+      courseName,
+      totalFund: ethers.formatEther(totalFundWei),
+      rewardPerStudent: ethers.formatEther(rewardWei),
+      maxParticipants
+    });
 
-    // Step 2: Create pool on contract
+    // Step 0: Check if pool already exists on-chain
     const poolContract = new ethers.Contract(
       POOL_CONTRACTS.COMPANY_POOL,
       COMPANY_POOL_ABI,
       signer
     );
+    
+    const existingPool = await poolContract.getPool(poolIdBytes);
+    if (existingPool[0] !== '0x0000000000000000000000000000000000000000') {
+      console.log('⚠️ Pool already exists on-chain, skipping creation');
+      return 'pool-already-exists';
+    }
 
+    // Step 1: Approve mUSD spending
+    const musdContract = new ethers.Contract(POOL_CONTRACTS.MUSD, MUSD_ABI, signer);
+    
+    console.log('📝 Approving mUSD spending...');
+    const approveTx = await musdContract.approve(POOL_CONTRACTS.COMPANY_POOL, totalFundWei);
+    await approveTx.wait();
+    console.log('✅ Approval confirmed');
+
+    // Step 2: Create pool on contract
+    console.log('📦 Calling createPool on contract...');
     const createTx = await poolContract.createPool(
       poolIdBytes,
       courseName,
@@ -68,10 +87,13 @@ export async function createPoolOnChain(
       maxParticipants
     );
 
+    console.log('⏳ Waiting for transaction confirmation...');
     const receipt = await createTx.wait();
+    console.log('✅ Pool created! TX:', receipt.hash);
+    
     return receipt.hash;
   } catch (error: any) {
-    console.error('Failed to create pool on chain:', error);
+    console.error('❌ Failed to create pool on chain:', error);
     throw new Error(error.message || 'Transaction failed');
   }
 }
@@ -115,7 +137,7 @@ export async function getPoolFromChain(poolId: string) {
  * Distribute reward from company pool (on-chain)
  */
 export async function distributeFromPool(
-  poolId: string,
+  _poolId: string,
   poolIdBytes: string,
   student: string,
   questIdBytes: string,
@@ -138,6 +160,22 @@ export async function distributeFromPool(
     console.log('Pool ID:', poolIdBytes);
     console.log('Student:', student);
     console.log('Quest ID:', questIdBytes);
+
+    // First check if pool exists
+    try {
+      const poolInfo = await poolContract.getPool(poolIdBytes);
+      console.log('Pool info from chain:', poolInfo);
+      if (poolInfo[0] === '0x0000000000000000000000000000000000000000') {
+        throw new Error(`❌ Pool does not exist on-chain. Please ensure the pool was funded properly using the "Create Pool" button.`);
+      }
+      console.log('✅ Pool exists on-chain');
+    } catch (checkError: any) {
+      console.error('❌ Error checking pool existence:', checkError);
+      if (checkError.message.includes('Pool does not exist')) {
+        throw checkError;
+      }
+      throw new Error(`❌ Pool does not exist on-chain. The pool was not properly funded. Please delete this pool and create a new one using the "Create Pool" button.`);
+    }
 
     const tx = await poolContract.distributeReward(
       poolIdBytes,
@@ -175,4 +213,3 @@ export async function getMUSDBalance(address: string): Promise<string> {
     return '0';
   }
 }
-
