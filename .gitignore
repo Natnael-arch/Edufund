@@ -38,6 +38,7 @@ coverage/
 !backend/README.md
 !frontend/README.md
 !contracts/README.md
+!MEZO_INTEGRATION.md
 
 # Helper scripts (root level only)
 /*.js
